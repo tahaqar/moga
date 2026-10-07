@@ -1,0 +1,813 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model User {
+  id              String          @id @default(cuid())
+  name            String
+  email           String          @unique
+  passwordHash    String
+  phone           String?
+  roleId          String
+  branchId        String?
+  isActive        Boolean         @default(true)
+  lastLoginAt     DateTime?
+  avatar          String?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  createdBy       String?
+  updatedBy       String?
+  deletedAt       DateTime?
+  role            Role            @relation(fields: [roleId], references: [id])
+  branch          Branch?         @relation(fields: [branchId], references: [id])
+  students        Student[]
+  applications    Application[]
+  visaCases       VisaCase[]
+  createdTasks    Task[]          @relation("TaskCreator")
+  assignedTasks   Task[]          @relation("TaskAssignee")
+  auditLogs       AuditLog[]
+  communications  Communication[]
+  notifications   Notification[]
+  payments        Payment[]
+
+  @@index([branchId])
+  @@index([roleId])
+  @@index([email])
+}
+
+model Role {
+  id          String           @id @default(cuid())
+  name        String           @unique
+  displayName String
+  description String?
+  isSystem    Boolean          @default(false)
+  permissions RolePermission[]
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  createdBy   String?
+  updatedBy   String?
+  deletedAt   DateTime?
+  users       User[]
+
+  @@index([name])
+}
+
+model Permission {
+  id              String           @id @default(cuid())
+  action          String
+  module          String
+  name            String           @unique
+  description     String?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  createdBy       String?
+  updatedBy       String?
+  deletedAt       DateTime?
+  rolePermissions RolePermission[]
+
+  @@index([module])
+  @@index([name])
+}
+
+model RolePermission {
+  id           String     @id @default(cuid())
+  roleId       String
+  permissionId String
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  createdBy    String?
+  updatedBy    String?
+  deletedAt    DateTime?
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, permissionId])
+  @@index([permissionId])
+  @@index([roleId])
+}
+
+model Branch {
+  id            String    @id @default(cuid())
+  code          String    @unique
+  name          String
+  city          String
+  country       String
+  address       String?
+  phone         String?
+  email         String?
+  isHeadquarter Boolean   @default(false)
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  createdBy     String?
+  updatedBy     String?
+  deletedAt     DateTime?
+  users         User[]
+  students      Student[]
+
+  @@index([code])
+}
+
+model Student {
+  id                String            @id @default(cuid())
+  studentCode       String            @unique
+  fullNameAr        String
+  fullNameEn        String
+  nationality       String
+  birthDate         DateTime?
+  gender            String?
+  phone             String
+  whatsapp          String
+  email             String
+  city              String?
+  residenceCountry  String
+  passportNumberEnc String
+  passportExpiry    DateTime?
+  lastCertificate   String?
+  gpa               String?
+  previousMajor     String?
+  languageLevel     String?
+  ieltsToeflScore   String?
+  desiredMajor      String?
+  desiredCountry    String?
+  budget            Float?
+  budgetCurrency    String            @default("USD")
+  intake            String?
+  targetLevel       String?
+  branchId          String?
+  counselorId       String?
+  leadSourceId      String?
+  registrationDate  DateTime          @default(now())
+  status            String            @default("new")
+  notes             String?
+  avatarUrl         String?
+  customFieldsData  String?
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  createdBy         String?
+  updatedBy         String?
+  deletedAt         DateTime?
+  branch            Branch?           @relation(fields: [branchId], references: [id])
+  counselor         User?             @relation(fields: [counselorId], references: [id])
+  leadSource        LeadSource?       @relation(fields: [leadSourceId], references: [id])
+  applications      Application[]
+  documents         StudentDocument[]
+  visaCases         VisaCase[]
+  payments          Payment[]
+  contracts         Contract[]
+  invoices          Invoice[]
+  tasks             Task[]
+  communications    Communication[]
+  travelRecords     TravelRecord[]
+  timelineEvents    TimelineEvent[]
+
+  @@index([leadSourceId])
+  @@index([counselorId])
+  @@index([branchId])
+  @@index([status])
+  @@index([registrationDate])
+  @@index([email])
+  @@index([phone])
+  @@index([studentCode])
+}
+
+model Country {
+  id                    String                     @id @default(cuid())
+  code                  String                     @unique
+  nameAr                String
+  nameEn                String
+  flagEmoji             String
+  currencyCode          String?
+  visaRequirements      String?
+  admissionRequirements String?
+  languageRequirements  String?
+  checklistNotes        String?
+  responsibleStaff      String?
+  isActive              Boolean                    @default(true)
+  createdAt             DateTime                   @default(now())
+  updatedAt             DateTime                   @updatedAt
+  createdBy             String?
+  updatedBy             String?
+  deletedAt             DateTime?
+  universities          University[]
+  applications          Application[]
+  visaCases             VisaCase[]
+  countryChecklists     CountryChecklistTemplate[]
+
+  @@index([nameEn])
+  @@index([code])
+}
+
+model University {
+  id                  String                 @id @default(cuid())
+  nameAr              String
+  nameEn              String
+  countryId           String
+  city                String
+  type                String                 @default("university")
+  website             String?
+  contactPerson       String?
+  contactEmail        String?
+  contactPhone        String?
+  responsibleStaff    String?
+  generalRequirements String?
+  deadlinesSummary    String?
+  commissionType      String                 @default("percentage")
+  commissionValue     Float                  @default(15.0)
+  commissionCurrency  String                 @default("EUR")
+  contractStatus      String                 @default("active")
+  contractStartDate   DateTime?
+  contractEndDate     DateTime?
+  contractFileUrl     String?
+  notes               String?
+  isActive            Boolean                @default(true)
+  createdAt           DateTime               @default(now())
+  updatedAt           DateTime               @updatedAt
+  createdBy           String?
+  updatedBy           String?
+  deletedAt           DateTime?
+  country             Country                @relation(fields: [countryId], references: [id])
+  programs            Program[]
+  applications        Application[]
+  commissions         UniversityCommission[]
+
+  @@index([nameEn])
+  @@index([countryId])
+}
+
+model Program {
+  id                    String        @id @default(cuid())
+  universityId          String
+  nameAr                String
+  nameEn                String
+  level                 String
+  faculty               String?
+  durationYears         Float?
+  language              String        @default("English")
+  tuitionFee            Float
+  currency              String        @default("EUR")
+  admissionRequirements String?
+  isActive              Boolean       @default(true)
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+  createdBy             String?
+  updatedBy             String?
+  deletedAt             DateTime?
+  university            University    @relation(fields: [universityId], references: [id], onDelete: Cascade)
+  applications          Application[]
+
+  @@index([universityId])
+}
+
+model KanbanStage {
+  id          String        @id @default(cuid())
+  nameAr      String
+  nameEn      String
+  slug        String        @unique
+  order       Int
+  color       String        @default("#3b82f6")
+  isDefault   Boolean       @default(false)
+  isTerminal  Boolean       @default(false)
+  description String?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  createdBy   String?
+  updatedBy   String?
+  deletedAt   DateTime?
+  applications Application[]
+
+  @@index([order])
+  @@index([slug])
+}
+
+model Application {
+  id                   String                 @id @default(cuid())
+  applicationCode      String                 @unique
+  studentId            String
+  countryId            String
+  universityId         String
+  programId            String?
+  customMajor          String?
+  level                String
+  intake               String
+  stageId              String
+  status               String                 @default("submitted")
+  applicationDate      DateTime               @default(now())
+  deadline             DateTime?
+  offerType            String?
+  offerExpiry          DateTime?
+  tuitionFee           Float?
+  tuitionCurrency      String                 @default("EUR")
+  applicationFee       Float?                 @default(0)
+  responsibleUserId    String?
+  notes                String?
+  createdAt            DateTime               @default(now())
+  updatedAt            DateTime               @updatedAt
+  createdBy            String?
+  updatedBy            String?
+  deletedAt            DateTime?
+  student              Student                @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  country              Country                @relation(fields: [countryId], references: [id])
+  university           University             @relation(fields: [universityId], references: [id])
+  program              Program?               @relation(fields: [programId], references: [id])
+  stage                KanbanStage            @relation(fields: [stageId], references: [id])
+  responsibleUser      User?                  @relation(fields: [responsibleUserId], references: [id])
+  tasks                Task[]
+  commissions          UniversityCommission[]
+  visaCases            VisaCase[]
+
+  @@index([responsibleUserId])
+  @@index([stageId])
+  @@index([universityId])
+  @@index([countryId])
+  @@index([studentId])
+}
+
+model DocumentType {
+  id                String                     @id @default(cuid())
+  nameAr            String
+  nameEn            String
+  code              String                     @unique
+  category          String
+  isRequired        Boolean                    @default(false)
+  description       String?
+  createdAt         DateTime                   @default(now())
+  updatedAt         DateTime                   @updatedAt
+  createdBy         String?
+  updatedBy         String?
+  deletedAt         DateTime?
+  studentDocuments  StudentDocument[]
+  countryChecklists CountryChecklistTemplate[]
+
+  @@index([category])
+  @@index([code])
+}
+
+model CountryChecklistTemplate {
+  id             String       @id @default(cuid())
+  countryId      String
+  documentTypeId String
+  category       String
+  isMandatory    Boolean      @default(true)
+  notes          String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  createdBy      String?
+  updatedBy      String?
+  deletedAt      DateTime?
+  country        Country      @relation(fields: [countryId], references: [id], onDelete: Cascade)
+  documentType   DocumentType @relation(fields: [documentTypeId], references: [id], onDelete: Cascade)
+
+  @@unique([countryId, documentTypeId])
+  @@index([documentTypeId])
+  @@index([countryId])
+}
+
+model StudentDocument {
+  id              String       @id @default(cuid())
+  studentId       String
+  documentTypeId  String
+  title           String
+  fileUrl         String
+  fileName        String
+  fileSize        Int?
+  fileMimeType    String?
+  status          String       @default("pending")
+  expiryDate      DateTime?
+  rejectionReason String?
+  verifiedAt      DateTime?
+  verifiedBy      String?
+  version         Int          @default(1)
+  notes           String?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  createdBy       String?
+  updatedBy       String?
+  deletedAt       DateTime?
+  student         Student      @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  documentType    DocumentType @relation(fields: [documentTypeId], references: [id])
+
+  @@index([status])
+  @@index([documentTypeId])
+  @@index([studentId])
+}
+
+model VisaCase {
+  id                   String              @id @default(cuid())
+  caseNumber           String              @unique
+  studentId            String
+  countryId            String
+  applicationId        String?
+  responsibleOfficerId String?
+  status               String              @default("preparing_documents")
+  embassyLocation      String?
+  appointmentDate      DateTime?
+  submissionDate       DateTime?
+  decisionDate         DateTime?
+  travelDate           DateTime?
+  studyStartDate       DateTime?
+  result               String?
+  rejectionReason      String?
+  visaNumber           String?
+  visaValidFrom        DateTime?
+  visaValidUntil       DateTime?
+  notes                String?
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @updatedAt
+  createdBy            String?
+  updatedBy            String?
+  deletedAt            DateTime?
+  student              Student             @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  country              Country             @relation(fields: [countryId], references: [id])
+  application          Application?        @relation(fields: [applicationId], references: [id])
+  responsibleOfficer   User?               @relation(fields: [responsibleOfficerId], references: [id])
+  checklistItems       VisaChecklistItem[]
+
+  @@index([responsibleOfficerId])
+  @@index([status])
+  @@index([countryId])
+  @@index([studentId])
+}
+
+model VisaChecklistItem {
+  id          String    @id @default(cuid())
+  visaCaseId  String
+  nameAr      String
+  nameEn      String
+  isCompleted Boolean   @default(false)
+  completedAt DateTime?
+  notes       String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  createdBy   String?
+  updatedBy   String?
+  deletedAt   DateTime?
+  visaCase    VisaCase  @relation(fields: [visaCaseId], references: [id], onDelete: Cascade)
+
+  @@index([visaCaseId])
+}
+
+model Contract {
+  id              String    @id @default(cuid())
+  contractNumber  String    @unique
+  studentId       String
+  totalAmount     Float
+  currency        String    @default("USD")
+  paidAmount      Float     @default(0)
+  remainingAmount Float     @default(0)
+  startDate       DateTime? @default(now())
+  terms           String?
+  status          String    @default("active")
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  createdBy       String?
+  updatedBy       String?
+  deletedAt       DateTime?
+  student         Student   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  invoices        Invoice[]
+  payments        Payment[]
+
+  @@index([status])
+  @@index([studentId])
+}
+
+model Invoice {
+  id            String    @id @default(cuid())
+  invoiceNumber String    @unique
+  studentId     String
+  contractId    String?
+  amount        Float
+  currency      String    @default("USD")
+  dueDate       DateTime?
+  status        String    @default("unpaid")
+  notes         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  createdBy     String?
+  updatedBy     String?
+  deletedAt     DateTime?
+  student       Student   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  contract      Contract? @relation(fields: [contractId], references: [id])
+  payments      Payment[]
+
+  @@index([status])
+  @@index([studentId])
+}
+
+model Payment {
+  id             String    @id @default(cuid())
+  receiptNumber  String    @unique
+  studentId      String
+  contractId     String?
+  invoiceId      String?
+  amount         Float
+  currency       String    @default("USD")
+  exchangeRate   Float     @default(1.0)
+  baseAmount     Float     @default(0)
+  paymentDate    DateTime  @default(now())
+  method         String    @default("cash")
+  receiverId     String?
+  notes          String?
+  receiptFileUrl String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  createdBy      String?
+  updatedBy      String?
+  deletedAt      DateTime?
+  student        Student   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  contract       Contract? @relation(fields: [contractId], references: [id])
+  invoice        Invoice?  @relation(fields: [invoiceId], references: [id])
+  receiver       User?     @relation(fields: [receiverId], references: [id])
+
+  @@index([receiverId])
+  @@index([paymentDate])
+  @@index([studentId])
+}
+
+model Currency {
+  id         String         @id @default(cuid())
+  code       String         @unique
+  nameAr     String
+  nameEn     String
+  symbol     String
+  isBase     Boolean        @default(false)
+  rateToBase Float          @default(1.0)
+  isActive   Boolean        @default(true)
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+  createdBy  String?
+  updatedBy  String?
+  deletedAt  DateTime?
+  ratesTo    ExchangeRate[] @relation("ExchangeRateTo")
+  ratesFrom  ExchangeRate[] @relation("ExchangeRateFrom")
+
+  @@index([code])
+}
+
+model ExchangeRate {
+  id             String   @id @default(cuid())
+  fromCurrencyId String
+  toCurrencyId   String
+  rate           Float
+  effectiveDate  DateTime @default(now())
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  createdBy      String?
+  updatedBy      String?
+  deletedAt      DateTime?
+  fromCurrency   Currency @relation("ExchangeRateFrom", fields: [fromCurrencyId], references: [id])
+  toCurrency     Currency @relation("ExchangeRateTo", fields: [toCurrencyId], references: [id])
+
+  @@index([toCurrencyId])
+  @@index([fromCurrencyId])
+}
+
+model UniversityCommission {
+  id               String      @id @default(cuid())
+  referenceNumber  String      @unique
+  applicationId    String
+  universityId     String
+  tuitionPaid      Float
+  tuitionCurrency  String      @default("EUR")
+  commissionRate   Float
+  commissionAmount Float
+  currency         String      @default("EUR")
+  status           String      @default("expected")
+  invoicedDate     DateTime?
+  receivedDate     DateTime?
+  amountReceived   Float       @default(0)
+  notes            String?
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+  createdBy        String?
+  updatedBy        String?
+  deletedAt        DateTime?
+  application      Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  university       University  @relation(fields: [universityId], references: [id])
+
+  @@index([status])
+  @@index([universityId])
+  @@index([applicationId])
+}
+
+model Task {
+  id            String       @id @default(cuid())
+  title         String
+  description   String?
+  priority      String       @default("medium")
+  status        String       @default("pending")
+  dueDate       DateTime?
+  assigneeId    String?
+  creatorId     String?
+  studentId     String?
+  applicationId String?
+  completedAt   DateTime?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  createdBy     String?
+  updatedBy     String?
+  deletedAt     DateTime?
+  student       Student?     @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  application   Application? @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  assignee      User?        @relation("TaskAssignee", fields: [assigneeId], references: [id])
+  creator       User?        @relation("TaskCreator", fields: [creatorId], references: [id])
+
+  @@index([dueDate])
+  @@index([status])
+  @@index([studentId])
+  @@index([assigneeId])
+}
+
+model Communication {
+  id        String    @id @default(cuid())
+  studentId String
+  userId    String?
+  type      String
+  direction String    @default("outbound")
+  subject   String?
+  content   String
+  sentAt    DateTime  @default(now())
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  createdBy String?
+  updatedBy String?
+  deletedAt DateTime?
+  student   Student   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  user      User?     @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([studentId])
+}
+
+model TravelRecord {
+  id                   String    @id @default(cuid())
+  studentId            String
+  flightNumber         String?
+  departureAirport     String?
+  arrivalAirport       String?
+  departureDate        DateTime?
+  arrivalDate          DateTime?
+  transitCities        String?
+  hasAirportPickup     Boolean   @default(false)
+  pickupPerson         String?
+  pickupPhone          String?
+  accommodationAddress String?
+  status               String    @default("scheduled")
+  notes                String?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+  createdBy            String?
+  updatedBy            String?
+  deletedAt            DateTime?
+  student              Student   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@index([studentId])
+}
+
+model TimelineEvent {
+  id          String    @id @default(cuid())
+  studentId   String
+  category    String
+  titleAr     String
+  titleEn     String
+  description String?
+  color       String    @default("blue")
+  iconName    String?
+  metadata    String?
+  actorName   String    @default("System")
+  actorId     String?
+  eventDate   DateTime  @default(now())
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  createdBy   String?
+  updatedBy   String?
+  deletedAt   DateTime?
+  student     Student   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@index([category])
+  @@index([eventDate])
+  @@index([studentId])
+}
+
+model Notification {
+  id        String    @id @default(cuid())
+  userId    String
+  titleAr   String
+  titleEn   String
+  messageAr String
+  messageEn String
+  type      String
+  linkUrl   String?
+  isRead    Boolean   @default(false)
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  createdBy String?
+  updatedBy String?
+  deletedAt DateTime?
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model MessageTemplate {
+  id        String    @id @default(cuid())
+  code      String    @unique
+  nameAr    String
+  nameEn    String
+  channel   String    @default("whatsapp")
+  contentAr String
+  contentEn String
+  variables String
+  isActive  Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  createdBy String?
+  updatedBy String?
+  deletedAt DateTime?
+
+  @@index([code])
+}
+
+model LeadSource {
+  id        String    @id @default(cuid())
+  nameAr    String
+  nameEn    String
+  code      String    @unique
+  color     String    @default("#6b7280")
+  isActive  Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  createdBy String?
+  updatedBy String?
+  deletedAt DateTime?
+  students  Student[]
+
+  @@index([code])
+}
+
+model AuditLog {
+  id        String    @id @default(cuid())
+  userId    String?
+  userName  String?
+  action    String
+  entity    String
+  entityId  String?
+  details   String?
+  oldValue  String?
+  newValue  String?
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  createdBy String?
+  updatedBy String?
+  deletedAt DateTime?
+  user      User?     @relation(fields: [userId], references: [id])
+
+  @@index([createdAt])
+  @@index([entityId])
+  @@index([entity])
+  @@index([userId])
+}
+
+model LookupOption {
+  id        String    @id @default(cuid())
+  category  String
+  key       String
+  labelAr   String
+  labelEn   String
+  color     String?   @default("#6366f1")
+  order     Int       @default(0)
+  isActive  Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@unique([category, key])
+  @@index([category])
+  @@index([key])
+}
+
+model CustomField {
+  id          String    @id @default(cuid())
+  entity      String
+  name        String
+  labelAr     String
+  labelEn     String
+  type        String
+  optionsJson String?
+  isRequired  Boolean   @default(false)
+  order       Int       @default(0)
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  @@index([entity])
+}

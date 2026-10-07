@@ -1,0 +1,7 @@
+{
+  "name": "Amalon Education CRM",
+  "description": "Comprehensive Study-Abroad Consultancy & University Admissions CRM for Amalon International Education",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+
